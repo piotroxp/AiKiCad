@@ -1,4 +1,6 @@
-# KiCad README
+# AiKiCad README
+
+<img src="logo.jpeg">
 
 For specific documentation about [building KiCad](https://dev-docs.kicad.org/en/build/), policies
 and guidelines, and source code documentation see the

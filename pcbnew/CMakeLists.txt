@@ -897,12 +897,23 @@ set( PCBNEW_KIFACE_LIBRARIES
     core
     idf3
     markdown_lib
+    ai_chat_plugin_pcbnew
     ${PCBNEW_IO_LIBRARIES}
     ${wxWidgets_LIBRARIES}
     ${PYTHON_LIBRARIES}
     Boost::headers
     ${PCBNEW_EXTRA_LIBS}    # -lrt must follow Boost
     )
+
+target_compile_definitions( pcbnew_kiface_objects
+    PRIVATE
+        KICAD_HAVE_AI_CHAT_PLUGIN
+)
+
+target_compile_definitions( pcbnew
+    PRIVATE
+        KICAD_HAVE_AI_CHAT_PLUGIN
+)
 
 target_link_libraries( pcbnew_kiface
     PRIVATE

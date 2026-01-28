@@ -545,6 +545,7 @@ AI_COMMAND_RESULT AI_COMMAND_PROCESSOR::processDirectCommand( const wxString& aC
 }
 
 
+#ifndef PCBNEW
 // Helper function to get library names from all library tables (global + project)
 static wxArrayString GetLibraryNames( SYMBOL_LIBRARY_ADAPTER* aAdapter )
 {
@@ -566,6 +567,7 @@ static wxArrayString GetLibraryNames( SYMBOL_LIBRARY_ADAPTER* aAdapter )
     }
     return names;
 }
+#endif
 
 
 AI_COMMAND_RESULT AI_COMMAND_PROCESSOR::processSchematicCommand( const wxString& aCommand )
@@ -576,9 +578,6 @@ AI_COMMAND_RESULT AI_COMMAND_PROCESSOR::processSchematicCommand( const wxString&
     {
         return { false, wxEmptyString, _( "Not in schematic editor" ) };
     }
-#else
-    return { false, wxEmptyString, _( "Schematic commands not available in PCB editor" ) };
-#endif
 
     // Parse "add component <name> [at <x>,<y>]" or "add <name>"
     if( aCommand.Contains( wxT( "add" ) ) && ( aCommand.Contains( wxT( "component" ) ) || 
@@ -704,6 +703,9 @@ AI_COMMAND_RESULT AI_COMMAND_PROCESSOR::processSchematicCommand( const wxString&
     }
 
     return { false, wxEmptyString, _( "Command not recognized or incomplete" ) };
+#else
+    return { false, wxEmptyString, _( "Schematic commands not available in PCB editor" ) };
+#endif
 }
 
 
@@ -1135,6 +1137,7 @@ void AI_COMMAND_PROCESSOR::gatherBoardContext( AI_CONTEXT& aContext ) const
 
 void AI_COMMAND_PROCESSOR::gatherSymbolLibraries( AI_CONTEXT& aContext ) const
 {
+#ifndef PCBNEW
     if( !m_frame )
         return;
 
@@ -1166,6 +1169,9 @@ void AI_COMMAND_PROCESSOR::gatherSymbolLibraries( AI_CONTEXT& aContext ) const
             aContext.availableComponents.push_back( symbolInfo );
         }
     }
+#else
+    wxUnusedVar( aContext );
+#endif
 }
 
 
@@ -1209,6 +1215,7 @@ void AI_COMMAND_PROCESSOR::gatherFootprintLibraries( AI_CONTEXT& aContext ) cons
 
 bool AI_COMMAND_PROCESSOR::findSymbolByName( const wxString& aSymbolName, LIB_ID& aLibId )
 {
+#ifndef PCBNEW
     if( !m_frame )
         return false;
 
@@ -1257,6 +1264,11 @@ bool AI_COMMAND_PROCESSOR::findSymbolByName( const wxString& aSymbolName, LIB_ID
     }
     
     return false;
+#else
+    wxUnusedVar( aSymbolName );
+    wxUnusedVar( aLibId );
+    return false;
+#endif
 }
 
 

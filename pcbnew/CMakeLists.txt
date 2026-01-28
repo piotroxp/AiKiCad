@@ -897,8 +897,6 @@ set( PCBNEW_KIFACE_LIBRARIES
     core
     idf3
     markdown_lib
-    ai_chat_plugin
-    eeschema_kiface_objects
     ${PCBNEW_IO_LIBRARIES}
     ${wxWidgets_LIBRARIES}
     ${PYTHON_LIBRARIES}

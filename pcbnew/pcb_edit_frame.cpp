@@ -126,8 +126,8 @@
 #include <footprint_chooser_frame.h>
 #include <toolbars_pcb_editor.h>
 #include <wx/log.h>
-// AI Chat plugin - only include when building the actual kiface (not QA tests)
-#ifndef BUILD_QA_TESTS
+// AI Chat plugin - only include when the plugin is linked in this target.
+#if defined( KICAD_HAVE_AI_CHAT_PLUGIN )
 #include <plugins/ai_chat/ai_chat_integration.h>
 #include <plugins/ai_chat/ai_chat_plugin.h>
 #endif
@@ -403,8 +403,8 @@ PCB_EDIT_FRAME::PCB_EDIT_FRAME( KIWAY* aKiway, wxWindow* aParent ) :
     m_auimgr.GetPane( "SelectionFilter" ).dock_proportion = 0;
     FinishAUIInitialization();
 
-    // Register AI Chat plugin (only when plugin is linked)
-#ifndef BUILD_QA_TESTS
+    // Register AI Chat plugin only when it's linked into this binary.
+#if defined( KICAD_HAVE_AI_CHAT_PLUGIN )
     RegisterAIChatPlugin( this );
 #endif
 

@@ -22,7 +22,6 @@
 #include <wx/regex.h>
 #include <wx/tokenzr.h>
 #include <eda_base_frame.h>
-#include <sch_edit_frame.h>
 #include <sch_symbol.h>
 #include <sch_screen.h>
 #include <schematic.h>
@@ -49,6 +48,12 @@ class SCH_LINE_WIRE_BUS_TOOL;
 #include <sch_line.h>
 #include <set>
 #include <algorithm>
+
+// Schematic-specific includes - only include when not building for PCBNEW
+// This prevents RTTI linking errors in pcbnew-only builds
+#ifndef PCBNEW
+#include <sch_edit_frame.h>
+#endif
 
 // PCB-specific includes - only include when PCB types are available
 // This prevents RTTI linking errors in eeschema-only builds
@@ -271,12 +276,14 @@ AI_COMMAND_RESULT AI_COMMAND_PROCESSOR::ProcessCommand( const wxString& aCommand
             
             // Second pass: Connect components (after they're placed and annotated)
             // Refresh the schematic to ensure components are annotated
+#ifndef PCBNEW
             SCH_EDIT_FRAME* schFrame = dynamic_cast<SCH_EDIT_FRAME*>( m_frame );
             if( schFrame && commandCount > 0 )
             {
                 // Force annotation update
                 schFrame->Schematic().CurrentSheet().LastScreen()->SetContentModified( true );
             }
+#endif
             
             for( const wxString& command : allCommands )
             {
@@ -470,12 +477,14 @@ AI_COMMAND_RESULT AI_COMMAND_PROCESSOR::ProcessCommandsFromResponse( const wxStr
     
     // Second pass: Connect components (after they're placed and annotated)
     // Refresh the schematic to ensure components are annotated
+#ifndef PCBNEW
     SCH_EDIT_FRAME* schFrame = dynamic_cast<SCH_EDIT_FRAME*>( m_frame );
     if( schFrame && commandCount > 0 )
     {
         // Force annotation update
         schFrame->Schematic().CurrentSheet().LastScreen()->SetContentModified( true );
     }
+#endif
     
     for( const wxString& command : allCommands )
     {
@@ -561,11 +570,15 @@ static wxArrayString GetLibraryNames( SYMBOL_LIBRARY_ADAPTER* aAdapter )
 
 AI_COMMAND_RESULT AI_COMMAND_PROCESSOR::processSchematicCommand( const wxString& aCommand )
 {
+#ifndef PCBNEW
     SCH_EDIT_FRAME* schFrame = dynamic_cast<SCH_EDIT_FRAME*>( m_frame );
     if( !schFrame )
     {
         return { false, wxEmptyString, _( "Not in schematic editor" ) };
     }
+#else
+    return { false, wxEmptyString, _( "Schematic commands not available in PCB editor" ) };
+#endif
 
     // Parse "add component <name> [at <x>,<y>]" or "add <name>"
     if( aCommand.Contains( wxT( "add" ) ) && ( aCommand.Contains( wxT( "component" ) ) || 
@@ -1017,13 +1030,15 @@ AI_CONTEXT AI_COMMAND_PROCESSOR::gatherContext() const
 
     // Get file and project information
     // Try to get filename from schematic or board
+#ifndef PCBNEW
     SCH_EDIT_FRAME* schFrame = dynamic_cast<SCH_EDIT_FRAME*>( m_frame );
     if( schFrame )
     {
         context.fileName = schFrame->Schematic().GetFileName();
     }
+#endif
 #if defined(PCBNEW) || defined(KICAD_BUILD_QA_TESTS)
-    else
+    if( context.fileName.IsEmpty() )
     {
         PCB_EDIT_FRAME* pcbFrame = dynamic_cast<PCB_EDIT_FRAME*>( m_frame );
         if( pcbFrame && pcbFrame->GetBoard() )
@@ -1033,8 +1048,8 @@ AI_CONTEXT AI_COMMAND_PROCESSOR::gatherContext() const
     }
 #endif
     
-    PROJECT& project = m_frame->Prj();
-    context.projectPath = project.GetProjectPath();
+    PROJECT& prj = m_frame->Prj();
+    context.projectPath = prj.GetProjectPath();
 
     // Gather context based on editor type
     if( context.editorType == wxT( "schematic" ) )
@@ -1060,6 +1075,7 @@ AI_CONTEXT AI_COMMAND_PROCESSOR::gatherContext() const
 
 void AI_COMMAND_PROCESSOR::gatherSchematicContext( AI_CONTEXT& aContext ) const
 {
+#ifndef PCBNEW
     SCH_EDIT_FRAME* schFrame = dynamic_cast<SCH_EDIT_FRAME*>( m_frame );
     if( !schFrame )
         return;
@@ -1087,6 +1103,10 @@ void AI_COMMAND_PROCESSOR::gatherSchematicContext( AI_CONTEXT& aContext ) const
         // Note: Net names could be added to context if needed
         // For now, we focus on components
     }
+#else
+    // Schematic context not available when building for PCBNEW
+    (void)aContext;
+#endif
 }
 
 
@@ -1242,12 +1262,13 @@ bool AI_COMMAND_PROCESSOR::findSymbolByName( const wxString& aSymbolName, LIB_ID
 
 bool AI_COMMAND_PROCESSOR::executePlaceComponent( const LIB_ID& aLibId, const VECTOR2I& aPosition )
 {
+#ifndef PCBNEW
     SCH_EDIT_FRAME* schFrame = dynamic_cast<SCH_EDIT_FRAME*>( m_frame );
     if( !schFrame )
         return false;
 
-    PROJECT& project = schFrame->Prj();
-    SYMBOL_LIBRARY_ADAPTER* adapter = PROJECT_SCH::SymbolLibAdapter( &project );
+    PROJECT& prj = schFrame->Prj();
+    SYMBOL_LIBRARY_ADAPTER* adapter = PROJECT_SCH::SymbolLibAdapter( &prj );
     if( !adapter )
         return false;
 
@@ -1302,11 +1323,17 @@ bool AI_COMMAND_PROCESSOR::executePlaceComponent( const LIB_ID& aLibId, const VE
     schFrame->GetCanvas()->Refresh();
 
     return true;
+#else
+    (void)aLibId;
+    (void)aPosition;
+    return false;
+#endif
 }
 
 
 bool AI_COMMAND_PROCESSOR::executeDrawWire( const VECTOR2I& aStart, const VECTOR2I& aEnd )
 {
+#ifndef PCBNEW
     SCH_EDIT_FRAME* schFrame = dynamic_cast<SCH_EDIT_FRAME*>( m_frame );
     if( !schFrame )
         return false;
@@ -1334,6 +1361,11 @@ bool AI_COMMAND_PROCESSOR::executeDrawWire( const VECTOR2I& aStart, const VECTOR
     commit.Push( _( "Draw Wire" ) );
 
     return true;
+#else
+    (void)aStart;
+    (void)aEnd;
+    return false;
+#endif
 }
 
 
@@ -1375,6 +1407,7 @@ bool AI_COMMAND_PROCESSOR::parseConnectCommand( const wxString& aCommand, wxStri
 bool AI_COMMAND_PROCESSOR::executeConnectComponents( const wxString& aRef1, const wxString& aPin1,
                                                       const wxString& aRef2, const wxString& aPin2 )
 {
+#ifndef PCBNEW
     SCH_EDIT_FRAME* schFrame = dynamic_cast<SCH_EDIT_FRAME*>( m_frame );
     if( !schFrame )
         return false;
@@ -1466,4 +1499,11 @@ bool AI_COMMAND_PROCESSOR::executeConnectComponents( const wxString& aRef1, cons
 
     // Draw wire between pins
     return executeDrawWire( pos1, pos2 );
+#else
+    (void)aRef1;
+    (void)aPin1;
+    (void)aRef2;
+    (void)aPin2;
+    return false;
+#endif
 }
